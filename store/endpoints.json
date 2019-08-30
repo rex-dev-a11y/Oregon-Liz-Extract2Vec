@@ -1,0 +1,5 @@
+{
+  "urls": {
+    "oregonLegislatureAPI": "api.oregonlegislature.gov/odata/odataservice.svc/"
+  }
+}
