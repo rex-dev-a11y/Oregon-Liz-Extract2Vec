@@ -1,5 +1,6 @@
 {
   "urls": {
-    "oregonLegislatureAPI": "api.oregonlegislature.gov/odata/odataservice.svc/"
+    "oregonLegislatureAPI": "api.oregonlegislature.gov/odata/odataservice.svc/",
+    "SODAApi": "https://data.oregon.gov/resource/aj6g-6752.json"
   }
 }

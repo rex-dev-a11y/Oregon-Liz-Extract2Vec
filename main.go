@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/headzoo/surf"
+	"github.com/headzoo/surf/agent"
 	"log"
 	"oregon-law-templating/clients"
 	"oregon-law-templating/ors"
+	"oregon-law-templating/ors/volume"
 	"os"
 	"os/signal"
 	"sync"
@@ -13,26 +15,44 @@ import (
 )
 
 type Task struct {
-	closed chan struct{}
+	close chan struct{}
 	wg     sync.WaitGroup
+	Vol 	ors.Volume
 	ticker *time.Ticker
 }
+
+//type ActiveStatues struct {
+//	Vols [...]Volume
+//}
+
+func (t *Task) get() {
+
+}
+
+func updateLegalDocuments() {
+
+}
+
+
 
 var logger = log.New(os.Stdout, "Main > ", log.LstdFlags)
 
 func main() {
 	goSurf()
+	//goSurfLiz()
+
 	store := clients.Store{}
 	store.InitializeViperEndpoints()
 	urls := store.Vi.Get("urls")
 
 	logger.Println(urls)
+	 ApiBase := (urls.SODAApi).string
 
 	vol := ors.Volume{}
 	vol.Init()
 
 	task := &Task{
-		closed: make(chan struct{}),
+		close: make(chan struct{}),
 		ticker: time.NewTicker(time.Second * 2),
 	}
 
@@ -49,13 +69,10 @@ func main() {
 	}
 }
 
-
-func goSurf() {
-
-	// Create a new browser and open reddit.
+func goSurfLiz() {
 	bow := surf.NewBrowser()
 
-	err := bow.Open("https://www.oregonlaws.org/oregon_revised_statutes")
+	err := bow.Open("https://api.oregonlegislature.gov/odata/odataservice.svc/")
 	if err != nil {
 		panic(err)
 	}
@@ -64,12 +81,62 @@ func goSurf() {
 	fmt.Println(bow.Title())
 
 	for _, link := range bow.Links() {
+
+		logger.Println(link.Text)
+	}
+}
+
+type SurfNode int
+
+const (
+	Last SurfNode  = iota + 1
+	First
+	Previous
+	Current
+	Next
+	Node
+)
+
+type LinkNode struct {
+	Url string
+	NextNodes map[string]SurfNode
+	LastNode SurfNode
+}
+
+type MissionMap struct {
+	entryPoint LinkNode
+	priorityNodes []LinkNode
+	history []string
+	URLS string
+	path string
+	current LinkNode
+}
+
+func goSurf() {
+
+	// Create a new browser and open reddit.
+	bow := surf.NewBrowser()
+	bow.SetUserAgent(agent.AOL())
+	//err := bow.Open()
+	err := bow.Open("https://www.oregonlaws.org/oregon_revised_statutes")
+	if err != nil {
+		panic(err)
+	}
+
+	logger.Println(bow.Body())
+
+	// Outputs: "reddit: the front page of the internet"
+	fmt.Println(bow.Title())
+
+	for _, link := range bow.Links() {
+		time.Sleep(time.Second * 3)
+
 		//fmt.Println(link.Text)
 		//fmt.Println(link.URL.String())
 		for i := 0; i < len(link.URL.String()); i++ {
 
 			volMatched := false
-			volumeTest := "volume"
+			volumeTest := "tattoo"
 			test := link.URL.String()
 			for j := 0; j < len(volumeTest); j++ {
 
@@ -129,7 +196,7 @@ func goSurf() {
 func (t *Task) Run() {
 	for {
 		select {
-		case <-t.closed:
+		case <-t.close:
 			return
 		case <-t.ticker.C:
 			handle()
@@ -138,7 +205,7 @@ func (t *Task) Run() {
 }
 
 func (t *Task) Stop() {
-	close(t.closed)
+	close(t.close)
 	t.wg.Wait()
 }
 
